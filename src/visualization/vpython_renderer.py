@@ -474,7 +474,7 @@ class VPythonRenderer:
             )
 
             # Update live joint angle display
-            angle = self._robot.joints[i].angle
+            angle = self._robot.joints[i].current_angle
             color = _GREEN if abs(angle) < 5 else _ORANGE if abs(angle) > 70 else _TEXT
             self._joint_wtexts[i].text = (
                 f'<span style="color:{color};font-family:{_MONO};'
