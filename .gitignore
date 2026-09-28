@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+venv/
+.venv/
+env/
+.env/
+
+# C build artifacts
+*.o
+*.obj
+*.exe
+c_sender
+c_sender.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Screenshots (optional — remove this line to track screenshots)
+screenshots/*.png
+screenshots/*.jpg
