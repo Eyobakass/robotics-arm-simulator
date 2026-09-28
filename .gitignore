@@ -29,6 +29,11 @@ c_sender.out
 .DS_Store
 Thumbs.db
 
-# Screenshots (optional — remove this line to track screenshots)
-screenshots/*.png
-screenshots/*.jpg
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+
+# Test cache
+.pytest_cache/

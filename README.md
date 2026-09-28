@@ -41,19 +41,20 @@ Built as a technical portfolio project demonstrating Python systems programming,
 
 ## Demo
 
-> **Screenshots/GIF coming soon** — run the simulator locally to see the 3D arm in action.
->
-> To generate your own demo:
+**3D VPython WebGL scene — robot arm live in browser (wave mode, UDP streaming)**
+
+![Robotic Arm Simulator — 3D WebGL scene](screenshots/demo_screenshot.png)
+
+📹 **[Watch the full demo video](screenshots/demo_simulation.mp4)**
+
+> To run it yourself:
 > ```bash
 > # Terminal 1 — start the simulator
 > python src/main.py
 >
-> # Terminal 2 — stream joint trajectories (sinusoidal wave)
+> # Terminal 2 — stream sinusoidal joint trajectories over UDP
 > python sender/python_sender.py --mode wave
 > ```
-
-<!-- TODO: Replace the placeholder above with an actual screenshot or GIF -->
-<!-- ![3D robot arm wave animation](screenshots/demo_wave.gif) -->
 
 ---
 
@@ -598,5 +599,6 @@ This project was built to demonstrate the following technical skills in a hands-
 | Automated unit testing — 75 tests | `tests/` |
 | Multithreaded concurrency + thread-safe state | `src/network/udp_server.py` |
 
-**Author:** [Your Name] — Software Engineering Student, Addis Ababa University
-**Contact:** [your.email@example.com] · [LinkedIn] · [GitHub]
+
+**Author:** Eyob Kassaye — B.Sc. Software Engineering Student, Addis Ababa University (Expected: June 2027)
+**Contact:** ekassaye0461@gmail.com · +251 945 835 542
