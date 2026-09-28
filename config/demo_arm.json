@@ -1,0 +1,54 @@
+{
+  "name": "demo_arm",
+  "description": "3-DOF industrial robotic arm for demonstration",
+  "base": {
+    "position": [0.0, 0.0, 0.0],
+    "width": 1.0,
+    "height": 0.3,
+    "depth": 1.0,
+    "color": [0.35, 0.35, 0.4]
+  },
+  "joints": [
+    {
+      "name": "base_rotation",
+      "axis": "y",
+      "link_length": 1.5,
+      "min_angle": -180.0,
+      "max_angle": 180.0,
+      "initial_angle": 0.0,
+      "link_radius": 0.08,
+      "joint_radius": 0.12,
+      "link_color": [0.70, 0.70, 0.80],
+      "joint_color": [1.00, 0.50, 0.00]
+    },
+    {
+      "name": "shoulder",
+      "axis": "x",
+      "link_length": 1.2,
+      "min_angle": -90.0,
+      "max_angle": 90.0,
+      "initial_angle": 0.0,
+      "link_radius": 0.07,
+      "joint_radius": 0.10,
+      "link_color": [0.60, 0.60, 0.70],
+      "joint_color": [1.00, 0.50, 0.00]
+    },
+    {
+      "name": "elbow",
+      "axis": "x",
+      "link_length": 1.0,
+      "min_angle": -135.0,
+      "max_angle": 135.0,
+      "initial_angle": 0.0,
+      "link_radius": 0.06,
+      "joint_radius": 0.08,
+      "link_color": [0.50, 0.50, 0.60],
+      "joint_color": [1.00, 0.50, 0.00]
+    }
+  ],
+  "end_effector": {
+    "radius": 0.10,
+    "length": 0.20,
+    "color": [0.00, 0.80, 0.20]
+  }
+}
