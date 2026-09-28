@@ -45,16 +45,42 @@ class VPythonRenderer:
         """
         self._robot = robot
 
+        # Compute total arm reach for sensible camera framing
+        total_reach = sum(j.link_length for j in robot.joints) + robot.base_height
+        half_reach = total_reach / 2.0
+
         # Set up the VPython scene
         self._scene = vp.canvas(
-            title=f'<b>Robotics Simulator</b> — {robot.name}',
-            width=960,
-            height=640,
-            center=vp.vector(0, 1.5, 0),
-            background=vp.vector(0.15, 0.15, 0.20),
+            title=(
+                '<b style="font-size:18px;">Robotics Arm Simulator</b>'
+                f'<br><span style="color:#aaa;font-size:13px;">{robot.name} '
+                f'&mdash; {robot.description}</span>'
+            ),
+            width=1000,
+            height=680,
+            center=vp.vector(0, half_reach, 0),
+            background=vp.vector(0.12, 0.12, 0.16),
         )
-        self._scene.camera.pos = vp.vector(4, 3, 4)
-        self._scene.camera.follow(None)
+
+        # Lock the view so it doesn't jump around
+        self._scene.autoscale = False
+        self._scene.range = total_reach * 1.1
+
+        # Set a sensible camera angle (looking from front-right, slightly above)
+        self._scene.forward = vp.vector(-1, -0.5, -1).norm()
+        self._scene.up = vp.vector(0, 1, 0)
+
+        # Lighting
+        self._scene.lights = []
+        vp.distant_light(direction=vp.vector(1, 1, 1), color=vp.vector(0.8, 0.8, 0.8))
+        vp.distant_light(direction=vp.vector(-1, 0.5, -1), color=vp.vector(0.3, 0.3, 0.4))
+
+        # Caption under the scene with controls help
+        self._scene.caption = (
+            '<i style="color:#888; font-size:12px;">'
+            'Rotate: Right-drag &nbsp;|&nbsp; Zoom: Scroll wheel &nbsp;|&nbsp; '
+            'Pan: Shift+drag</i>'
+        )
 
         # Create static scene elements
         self._create_floor()
@@ -65,65 +91,83 @@ class VPythonRenderer:
         self._create_joints_and_links()
         self._create_end_effector()
 
-        # Status label
+        # Status label (attached to the scene, not the world)
         self._label = vp.label(
-            pos=vp.vector(0, -0.5, 0),
+            pos=vp.vector(0, -0.3, 0),
             text='Waiting for UDP data...',
-            height=14,
-            color=vp.color.white,
+            height=12,
+            color=vp.vector(0.9, 0.9, 0.9),
             box=False,
             opacity=0,
+            line=False,
         )
 
     def _create_floor(self):
         """Draw a grid floor at y=0."""
         floor_size = 6
-        # Main floor
+        floor_half = floor_size / 2
+
+        # Main floor surface
         vp.box(
-            pos=vp.vector(0, -0.02, 0),
-            size=vp.vector(floor_size, 0.02, floor_size),
-            color=vp.vector(0.25, 0.25, 0.28),
+            pos=vp.vector(0, -0.025, 0),
+            size=vp.vector(floor_size, 0.01, floor_size),
+            color=vp.vector(0.22, 0.22, 0.25),
         )
-        # Grid lines
+
+        # Grid lines — thinner, subtler
+        grid_color = vp.vector(0.30, 0.30, 0.33)
         for i in range(-floor_size // 2, floor_size // 2 + 1):
             vp.curve(
                 pos=[
-                    vp.vector(i, 0.001, -floor_size / 2),
-                    vp.vector(i, 0.001, floor_size / 2),
+                    vp.vector(i, -0.019, -floor_half),
+                    vp.vector(i, -0.019, floor_half),
                 ],
-                color=vp.vector(0.35, 0.35, 0.38),
-                radius=0.005,
+                color=grid_color,
+                radius=0.003,
             )
             vp.curve(
                 pos=[
-                    vp.vector(-floor_size / 2, 0.001, i),
-                    vp.vector(floor_size / 2, 0.001, i),
+                    vp.vector(-floor_half, -0.019, i),
+                    vp.vector(floor_half, -0.019, i),
                 ],
-                color=vp.vector(0.35, 0.35, 0.38),
-                radius=0.005,
+                color=grid_color,
+                radius=0.003,
             )
 
     def _create_axes(self):
-        """Draw small XYZ axis indicators at the origin."""
-        axis_len = 0.6
+        """Draw XYZ axis indicators at the origin."""
+        axis_len = 0.5
+        shaft = 0.015
         vp.arrow(
-            pos=vp.vector(0, 0.01, 0),
+            pos=vp.vector(0, 0.005, 0),
             axis=vp.vector(axis_len, 0, 0),
-            color=vp.color.red,
-            shaftwidth=0.02,
+            color=vp.vector(0.9, 0.2, 0.2),
+            shaftwidth=shaft,
         )
         vp.arrow(
-            pos=vp.vector(0, 0.01, 0),
+            pos=vp.vector(0, 0.005, 0),
             axis=vp.vector(0, axis_len, 0),
-            color=vp.color.green,
-            shaftwidth=0.02,
+            color=vp.vector(0.2, 0.9, 0.2),
+            shaftwidth=shaft,
         )
         vp.arrow(
-            pos=vp.vector(0, 0.01, 0),
+            pos=vp.vector(0, 0.005, 0),
             axis=vp.vector(0, 0, axis_len),
-            color=vp.color.blue,
-            shaftwidth=0.02,
+            color=vp.vector(0.2, 0.4, 0.9),
+            shaftwidth=shaft,
         )
+
+        # Axis labels
+        label_offset = 0.12
+        vp.label(pos=vp.vector(axis_len + label_offset, 0, 0),
+                 text='X', height=10, color=vp.vector(0.9, 0.2, 0.2),
+                 box=False, opacity=0, line=False)
+        vp.label(pos=vp.vector(0, axis_len + label_offset, 0),
+                 text='Y', height=10, color=vp.vector(0.2, 0.9, 0.2),
+                 box=False, opacity=0, line=False)
+        vp.label(pos=vp.vector(0, 0, axis_len + label_offset),
+                 text='Z', height=10, color=vp.vector(0.2, 0.4, 0.9),
+                 box=False, opacity=0, line=False)
 
     def _create_base(self):
         """Create the base platform box."""
@@ -150,6 +194,7 @@ class VPythonRenderer:
                 pos=vp.vector(0, 0, 0),
                 radius=joint.joint_radius,
                 color=vp.vector(jc[0], jc[1], jc[2]),
+                shininess=0.6,
             )
             self._joint_spheres.append(sphere)
 
