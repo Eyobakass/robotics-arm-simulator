@@ -58,14 +58,17 @@ class VPythonRenderer:
         # Set up the VPython scene
         self._scene = vp.canvas(
             title=(
-                '<b style="font-size:18px;">Robotics Arm Simulator</b>'
-                f'<br><span style="color:#aaa;font-size:13px;">{robot.name} '
-                f'&mdash; {robot.description}</span>'
+                '<div style="background:linear-gradient(135deg, #1e1e24 0%, #2b2b36 100%); padding:15px 20px; border-radius:8px; margin-bottom:10px; font-family:Segoe UI, sans-serif; border-left: 5px solid #00ff88; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">'
+                '<h2 style="margin:0; color:#fff; letter-spacing: 1px;">'
+                '  <span style="font-size:24px; margin-right:8px;">🤖</span> Real-Time Robotics Arm Simulator'
+                '</h2>'
+                f'<div style="color:#00ff88; margin-top:6px; font-size:14px; font-weight:bold;">● LIVE <span style="color:#aab; font-weight:normal; margin-left:8px;">Model: {robot.name} &mdash; {robot.description}</span></div>'
+                '</div>'
             ),
             width=1000,
-            height=680,
+            height=540,
             center=vp.vector(0, half_reach, 0),
-            background=vp.vector(0.12, 0.12, 0.16),
+            background=vp.vector(0.08, 0.08, 0.11),
         )
 
         # Lock the view so it doesn't jump around
@@ -83,9 +86,12 @@ class VPythonRenderer:
 
         # Caption under the scene with controls help
         self._scene.caption = (
-            '<i style="color:#888; font-size:12px;">'
-            'Rotate: Right-drag &nbsp;|&nbsp; Zoom: Scroll wheel &nbsp;|&nbsp; '
-            'Pan: Shift+drag</i>'
+            '<div style="background:#1e1e24; padding:12px 20px; border-radius:8px; margin-top:10px; font-family:Segoe UI, sans-serif; color:#888; font-size:13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">'
+            '<b><span style="color:#aaa;">🖱️ Camera Controls:</span></b> &nbsp; '
+            'Rotate: <span style="color:#fff;">Right-drag</span> &nbsp;|&nbsp; '
+            'Zoom: <span style="color:#fff;">Scroll</span> &nbsp;|&nbsp; '
+            'Pan: <span style="color:#fff;">Shift+drag</span>'
+            '</div>'
         )
 
         # Create static scene elements
@@ -113,18 +119,22 @@ class VPythonRenderer:
         self._anim_thread = None
         self._udp_port = 9999  # default, updated by set_udp_port()
 
-        self._scene.append_to_caption('\n\n')
-        self._start_btn = vp.button(
-            text='  \u25b6  Start Movement  ',
-            bind=self._on_button_click,
+        self._scene.append_to_caption(
+            '<div style="background:linear-gradient(135deg, #2b2b36 0%, #1e1e24 100%); padding:15px 20px; border-radius:8px; margin-top:10px; font-family:Segoe UI, sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display:inline-block; border-left: 5px solid #3498db;">'
+            '<span style="color:#fff; font-size:15px; font-weight:bold; margin-right:20px;">⚙️ Control Panel</span>'
         )
+        self._start_btn = vp.button(
+            text='<b>&nbsp;&nbsp;▶ START MOVEMENT&nbsp;&nbsp;</b>',
+            bind=self._on_button_click,
+            background=vp.color.green,
+            color=vp.color.white
+        )
+        self._scene.append_to_caption('&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#aaa; font-size:14px; font-weight:bold;">Animation Mode:</span> ')
         self._mode_menu = vp.menu(
             choices=['wave', 'sweep', 'random'],
             bind=lambda m: None,  # just stores selection
         )
-        self._scene.append_to_caption(
-            '  <i style="color:#888;font-size:12px;">animation mode</i>'
-        )
+        self._scene.append_to_caption('</div>\n')
 
     def set_udp_port(self, port: int):
         """Set the UDP port the built-in sender targets."""
@@ -134,7 +144,10 @@ class VPythonRenderer:
         """Toggle the built-in animation on/off."""
         if not self._anim_running:
             self._anim_running = True
-            btn.text = '  \u25a0  Stop Movement  '
+            btn.text = '<b>&nbsp;&nbsp;■ STOP MOVEMENT&nbsp;&nbsp;</b>'
+            try: btn.background = vp.color.red
+            except Exception: pass
+            
             mode = self._mode_menu.selected
             self._anim_thread = threading.Thread(
                 target=self._run_animation, args=(mode,), daemon=True
@@ -142,7 +155,9 @@ class VPythonRenderer:
             self._anim_thread.start()
         else:
             self._anim_running = False
-            btn.text = '  \u25b6  Start Movement  '
+            btn.text = '<b>&nbsp;&nbsp;▶ START MOVEMENT&nbsp;&nbsp;</b>'
+            try: btn.background = vp.color.green
+            except Exception: pass
 
     def _run_animation(self, mode: str):
         """Send animated joint packets to the local UDP server."""
