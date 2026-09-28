@@ -7,12 +7,18 @@ Renders the robot as articulated 3D geometry:
     - Cylinder for each link
     - Cone for the end effector
     - Grid floor and axis indicators
+    - Start/Stop Movement button for built-in demo animation
 
 The renderer creates VPython objects once on initialization,
 then updates their positions/orientations each frame based on
 forward kinematics output.
 """
 
+import json
+import math
+import socket
+import threading
+import time
 from typing import List
 
 import numpy as np
@@ -101,6 +107,108 @@ class VPythonRenderer:
             opacity=0,
             line=False,
         )
+
+        # ── Built-in demo animation ────────────────────────────────
+        self._anim_running = False
+        self._anim_thread = None
+        self._udp_port = 9999  # default, updated by set_udp_port()
+
+        self._scene.append_to_caption('\n\n')
+        self._start_btn = vp.button(
+            text='  \u25b6  Start Movement  ',
+            bind=self._on_button_click,
+        )
+        self._mode_menu = vp.menu(
+            choices=['wave', 'sweep', 'random'],
+            bind=lambda m: None,  # just stores selection
+        )
+        self._scene.append_to_caption(
+            '  <i style="color:#888;font-size:12px;">animation mode</i>'
+        )
+
+    def set_udp_port(self, port: int):
+        """Set the UDP port the built-in sender targets."""
+        self._udp_port = port
+
+    def _on_button_click(self, btn):
+        """Toggle the built-in animation on/off."""
+        if not self._anim_running:
+            self._anim_running = True
+            btn.text = '  \u25a0  Stop Movement  '
+            mode = self._mode_menu.selected
+            self._anim_thread = threading.Thread(
+                target=self._run_animation, args=(mode,), daemon=True
+            )
+            self._anim_thread.start()
+        else:
+            self._anim_running = False
+            btn.text = '  \u25b6  Start Movement  '
+
+    def _run_animation(self, mode: str):
+        """Send animated joint packets to the local UDP server."""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        t = 0.0
+        dt = 1.0 / 30.0  # 30 Hz
+        try:
+            while self._anim_running:
+                if mode == 'sweep':
+                    joints = self._sweep(t)
+                elif mode == 'random':
+                    joints = self._random(t)
+                else:
+                    joints = self._wave(t)
+
+                msg = json.dumps({
+                    "robot": self._robot.name,
+                    "timestamp": int(time.time()),
+                    "joints": joints,
+                }).encode('utf-8')
+                sock.sendto(msg, ('127.0.0.1', self._udp_port))
+                time.sleep(dt)
+                t += dt
+        finally:
+            sock.close()
+
+    # ── Animation functions (same math as python_sender.py) ─────
+
+    @staticmethod
+    def _wave(t):
+        return {
+            "base_rotation": 45.0 * math.sin(t * 0.5),
+            "shoulder":      30.0 * math.sin(t * 0.7 + 1.0),
+            "elbow":         50.0 * math.sin(t * 1.1 + 2.0),
+        }
+
+    @staticmethod
+    def _sweep(t):
+        cycle = t % 9.0
+        if cycle < 3.0:
+            return {"base_rotation": 120.0 * math.sin((cycle / 3.0) * math.pi * 2),
+                    "shoulder": 0.0, "elbow": 0.0}
+        elif cycle < 6.0:
+            return {"base_rotation": 0.0,
+                    "shoulder": 60.0 * math.sin(((cycle - 3.0) / 3.0) * math.pi * 2),
+                    "elbow": 0.0}
+        else:
+            return {"base_rotation": 0.0, "shoulder": 0.0,
+                    "elbow": 90.0 * math.sin(((cycle - 6.0) / 3.0) * math.pi * 2)}
+
+    _rand_targets = {"base_rotation": 0.0, "shoulder": 0.0, "elbow": 0.0}
+    _rand_current = {"base_rotation": 0.0, "shoulder": 0.0, "elbow": 0.0}
+    _rand_last = 0.0
+
+    def _random(self, t):
+        import random
+        if t - self._rand_last > 2.0:
+            self._rand_targets = {
+                "base_rotation": random.uniform(-120, 120),
+                "shoulder": random.uniform(-60, 60),
+                "elbow": random.uniform(-90, 90),
+            }
+            self._rand_last = t
+        for k in self._rand_current:
+            self._rand_current[k] += 0.05 * (self._rand_targets[k] - self._rand_current[k])
+        return dict(self._rand_current)
 
     def _create_floor(self):
         """Draw a grid floor at y=0."""

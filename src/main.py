@@ -88,6 +88,7 @@ def main():
     # ── Create 3D Visualization ─────────────────────────────────────
     logger.info("Initializing VPython 3D visualization...")
     renderer = VPythonRenderer(robot)
+    renderer.set_udp_port(args.port)
 
     # Initial FK computation and render
     positions, orientations = compute_forward_kinematics(robot)
